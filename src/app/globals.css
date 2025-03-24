@@ -1,0 +1,335 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary: #f97316;
+    --primary-rgb: 249, 115, 22;
+    --primary-hover: #ea580c;
+  }
+}
+
+@layer components {
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-orange-300;
+  }
+
+  .glass-card {
+    @apply rounded-xl p-6 shadow-lg bg-white/80 backdrop-blur-sm border border-gray-200/50;
+    transition: all 0.3s ease;
+  }
+
+  .glass-card:hover {
+    @apply shadow-xl;
+    transform: translateY(-5px);
+  }
+
+  .hover-lift {
+    @apply transition-all duration-300;
+  }
+
+  .hover-lift:hover {
+    @apply shadow-xl;
+    transform: translateY(-5px);
+  }
+
+  .btn-primary {
+    @apply px-6 py-3 bg-primary text-white rounded-lg 
+           transition-all duration-300 shadow-lg hover:bg-orange-600;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 bg-white text-primary border-2 border-primary 
+           rounded-lg transition-all duration-300 shadow-lg hover:bg-orange-50;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-2 rounded-lg border border-gray-300
+           focus:border-primary focus:ring-2 focus:ring-primary/20 
+           outline-none transition-all duration-300 bg-white/80;
+  }
+
+  .input-field:focus {
+    @apply bg-white;
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.1);
+  }
+
+  /* Advanced cursor effects */
+  .math-cursor {
+    @apply rounded-full pointer-events-none mix-blend-overlay absolute;
+    background: radial-gradient(
+      circle,
+      rgba(249, 115, 22, 0.15) 0%,
+      rgba(249, 115, 22, 0.05) 70%,
+      rgba(255, 255, 255, 0) 100%
+    );
+  }
+
+  .math-particle {
+    @apply absolute pointer-events-none;
+    animation: float-away 3s ease-out forwards;
+  }
+
+  .cursor-grid {
+    @apply absolute inset-0 opacity-10 pointer-events-none;
+    background-image: 
+      radial-gradient(circle, rgba(249, 115, 22, 0.1) 1px, transparent 1px);
+    background-size: 30px 30px;
+  }
+
+  .cursor-dot {
+    @apply absolute w-1 h-1 bg-primary rounded-full pointer-events-none;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+}
+
+@layer utilities {
+  @keyframes gradient-x {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-20px);
+    }
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+  
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+}
+
+/* Custom animations */
+@keyframes blob {
+  0% {
+    transform: scale(1) translate(0px, 0px);
+  }
+  33% {
+    transform: scale(1.1) translate(30px, -50px);
+  }
+  66% {
+    transform: scale(0.9) translate(-20px, 20px);
+  }
+  100% {
+    transform: scale(1) translate(0px, 0px);
+  }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: #e5e7eb;
+  border-radius: 0.5rem;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(249, 115, 22, 0.3);
+  border-radius: 0.5rem;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(249, 115, 22, 0.5);
+}
+
+/* Loading animation */
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(249, 115, 22, 0.1);
+  border-radius: 50%;
+  border-top-color: #f97316;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* New cursor animations */
+@keyframes float-away {
+  0% {
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-50%, calc(-50% - 100px)) scale(0.5) rotate(180deg);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+.glow-cursor {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Math grid animation */
+@keyframes grid-wave {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(10px);
+  }
+}
+
+.grid-wave {
+  animation: grid-wave 8s ease-in-out infinite;
+}
+
+/* Formula appearing animation */
+@keyframes formula-appear {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.formula-in {
+  animation: formula-appear 0.5s forwards ease-out;
+}
+
+/* Custom CSS for Auth pages */
+.glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.input-field {
+  width: 100%;
+  padding: 0.75rem;
+  padding-left: 2.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background-color: white;
+  transition: all 0.2s;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #f97316;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+}
+
+.btn-primary {
+  background-color: #f97316;
+  color: white;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+  text-align: center;
+}
+
+.btn-primary:hover {
+  background-color: #ea580c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.25);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.btn-primary:disabled {
+  background-color: #d1d5db;
+  cursor: not-allowed;
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.gradient-text {
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-image: linear-gradient(to right, #f97316, #ff7e33);
+  display: inline-block;
+}
+
+.loading-spinner {
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top: 3px solid white;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Add animation for elements */
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+@keyframes blob {
+  0% {
+    transform: scale(1) translate(0px, 0px);
+  }
+  33% {
+    transform: scale(1.1) translate(20px, -20px);
+  }
+  66% {
+    transform: scale(0.9) translate(-20px, 20px);
+  }
+  100% {
+    transform: scale(1) translate(0px, 0px);
+  }
+}
