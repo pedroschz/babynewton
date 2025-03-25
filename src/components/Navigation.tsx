@@ -5,13 +5,12 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
-import { Bell, User, Menu, X, LogOut, Settings, BookOpen, Brain } from 'lucide-react'
+import { Bell, User, Menu, X, LogOut, Settings, BookOpen, Brain, Video, Gauge } from 'lucide-react'
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: BookOpen },
-  { name: 'Problem Solver', href: '/solver', icon: Brain },
+  { name: 'Dashboard', href: '/dashboard', icon: Gauge },
+  { name: 'Video Explanation', href: '/chat', icon: Video },
   { name: 'My Videos', href: '/videos', icon: BookOpen },
-  { name: 'Chat', href: '/chat', icon: Brain },
 ]
 
 export function Navigation() {
@@ -89,49 +88,32 @@ export function Navigation() {
           </div>
           
           <div className="flex items-center space-x-4">
+            {/* Login/Signup buttons for desktop */}
             <div className="hidden sm:flex items-center space-x-4">
-              <Link href="/auth/login">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Link 
+                  href="/auth/login" 
+                  className="font-medium text-gray-600 hover:text-primary transition-colors"
                 >
-                  <Button variant="ghost" className="text-gray-600 hover:text-primary">
-                    Login
-                  </Button>
-                </motion.div>
-              </Link>
+                  Log in
+                </Link>
+              </motion.div>
               
-              <Link href="/auth/signup">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Link 
+                  href="/auth/signup" 
+                  className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 active:translate-y-0"
                 >
-                  <Button className="btn-primary">
-                    Sign Up
-                  </Button>
-                </motion.div>
-              </Link>
+                  Sign up
+                </Link>
+              </motion.div>
             </div>
-            
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5 text-gray-600" />
-                <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-primary ring-2 ring-white" />
-              </Button>
-            </motion.div>
-            
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Button variant="ghost" size="icon" className="relative overflow-hidden rounded-full bg-gray-100 ring-2 ring-white/80 hover:ring-primary/50 transition-all">
-                <User className="h-5 w-5 text-gray-600" />
-                <div className="absolute inset-0 bg-primary/10 opacity-0 hover:opacity-100 transition-opacity" />
-              </Button>
-            </motion.div>
             
             <div className="sm:hidden">
               <Button 
@@ -179,6 +161,30 @@ export function Navigation() {
               </div>
             </Link>
           ))}
+          
+          {/* Login/Signup buttons for mobile */}
+          <div className="pt-2 pb-1 flex flex-col space-y-2">
+            <Link
+              href="/auth/login"
+              className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-primary hover:bg-primary/5 rounded-md"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <div className="flex items-center">
+                <LogOut className="mr-3 h-5 w-5" />
+                Log in
+              </div>
+            </Link>
+            <Link
+              href="/auth/signup" 
+              className="block px-3 py-2 text-base font-medium bg-primary/10 text-primary hover:bg-primary/20 rounded-md"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <div className="flex items-center">
+                <User className="mr-3 h-5 w-5" />
+                Sign up
+              </div>
+            </Link>
+          </div>
           
           <div className="pt-4 pb-3 border-t border-gray-200">
             <div className="flex items-center px-4">

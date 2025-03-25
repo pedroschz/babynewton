@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Brain, BookOpen, History, Video } from "lucide-react"
+import { Brain, BookOpen, History, Video, Gauge } from "lucide-react"
 
 export default function DashboardPage() {
   return (
@@ -32,14 +32,14 @@ export default function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button className="w-full">Start Solving</Button>
+              <Button className="w-full text-white">Start Solving</Button>
             </CardContent>
           </Card>
 
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
+                <Gauge className="h-5 w-5" />
                 Ask Questions
               </CardTitle>
               <CardDescription>

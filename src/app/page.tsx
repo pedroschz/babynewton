@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from 'react'
+import { useRef, useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { motion, useInView, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
@@ -72,27 +72,23 @@ const mathFormulas = [
   'dx/dt = v'
 ];
 
-export default function Home() {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [cursorElements, setCursorElements] = useState<Array<{id: number, x: number, y: number, scale: number, rotation: number, opacity: number, Component: any}>>([]);
+// Client-side only cursor effects component
+const CursorEffects = ({ windowSize, mousePosition }) => {
+  if (typeof window === 'undefined') return null;
+  
   const cursorRef = useRef<HTMLDivElement>(null);
-  const cursorX = useMotionValue(0);
-  const cursorY = useMotionValue(0);
+  const cursorX = useMotionValue(mousePosition.x);
+  const cursorY = useMotionValue(mousePosition.y);
   
   // Smooth cursor following
   const springConfig = { damping: 25, stiffness: 200 };
   const smoothCursorX = useSpring(cursorX, springConfig);
   const smoothCursorY = useSpring(cursorY, springConfig);
 
-  const heroRef = useRef(null);
-  const heroInView = useInView(heroRef, { once: true });
-  const featuresRef = useRef(null);
-  const featuresInView = useInView(featuresRef, { once: true, amount: 0.2 });
-  const ctaRef = useRef(null);
-  const ctaInView = useInView(ctaRef, { once: true, amount: 0.5 });
-
   const [mathFormula, setMathFormula] = useState(mathFormulas[0]);
   const [mathNodes, setMathNodes] = useState<Array<{id: number, x: number, y: number, scale: number, formula: string}>>([]);
+  const [cursorElements, setCursorElements] = useState<Array<{id: number, x: number, y: number, scale: number, rotation: number, opacity: number, Component: any}>>([]);
+  
   const lastNodeTime = useRef(0);
   const formulaIndex = useRef(0);
 
@@ -106,46 +102,7 @@ export default function Home() {
     }))
   );
 
-  // Add an extra math-themed interaction
-  const [equation, setEquation] = useState('');
-  const [showSolution, setShowSolution] = useState(false);
-  const equationInputRef = useRef<HTMLInputElement>(null);
-
-  const handleSolveEquation = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (equation.trim()) {
-      setShowSolution(true);
-      // Simulate auto-focusing back to the input after showing the solution
-      setTimeout(() => {
-        if (equationInputRef.current) {
-          equationInputRef.current.focus();
-        }
-      }, 100);
-    }
-  };
-
-  // Equations and solutions for demo
-  const getEquationSolution = (eq: string) => {
-    // This is just a simple demo - would be replaced with actual math solver in a real app
-    const simpleEquations: Record<string, string> = {
-      'x^2-4x+4=0': 'x = 2 (double root)',
-      'x^2-9=0': 'x = ±3',
-      'x^2+2x+1=0': 'x = -1 (double root)',
-      '2x+3=7': 'x = 2',
-      'x^2-5x+6=0': 'x = 2 or x = 3',
-      '3x-6=0': 'x = 2',
-      'x^3-x=0': 'x = 0, x = 1, or x = -1',
-    };
-    
-    const normalizedEq = eq.replace(/\s+/g, '').toLowerCase();
-    
-    if (simpleEquations[normalizedEq]) {
-      return simpleEquations[normalizedEq];
-    }
-    
-    return "I'll solve this step by step in a full explanation";
-  };
-
+  // Effect for mouse and cursor animation
   useEffect(() => {
     let animationFrameId: number;
     let particleTimeout: NodeJS.Timeout;
@@ -155,9 +112,6 @@ export default function Home() {
 
     const handleMouseMove = (e: MouseEvent) => {
       const { clientX, clientY } = e;
-      
-      // Update regular cursor position for radial gradient
-      setMousePosition({ x: clientX, y: clientY });
       
       // Update framer motion values for advanced cursor
       cursorX.set(clientX);
@@ -278,149 +232,342 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="flex flex-col min-h-screen overflow-hidden relative">
-      {/* Custom cursor effects */}
-      <motion.div 
-        ref={cursorRef}
-        className="fixed top-0 left-0 w-full h-full pointer-events-none z-50"
-        style={{ perspective: 1000 }}
-      >
-        {/* Floating math symbols */}
-        {cursorElements.map((element) => (
+    <motion.div 
+      ref={cursorRef}
+      className="fixed top-0 left-0 w-full h-full pointer-events-none z-50"
+      style={{ perspective: 1000 }}
+    >
+      {/* Floating math symbols */}
+      {cursorElements.map((element) => (
+        <motion.div
+          key={element.id}
+          className="absolute text-primary pointer-events-none"
+          initial={{ x: element.x, y: element.y, opacity: element.opacity, scale: element.scale, rotate: element.rotation }}
+          animate={{ opacity: 0, y: element.y - 100, scale: element.scale * 0.5, rotate: element.rotation + 180 }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
+        >
+          <element.Component size={24} />
+        </motion.div>
+      ))}
+      
+      {/* Cursor followers (small orbiting dots) */}
+      {cursorFollowers.current.map((follower, i) => (
+        <motion.div
+          key={`follower-${i}`}
+          className="absolute w-2 h-2 rounded-full bg-primary/30 pointer-events-none"
+          style={{
+            x: follower.x,
+            y: follower.y,
+            translateX: '-50%',
+            translateY: '-50%',
+            opacity: follower.opacity,
+            scale: follower.scale
+          }}
+        />
+      ))}
+      
+      {/* Large moving math formula nodes */}
+      {mathNodes.map((node) => (
+        <motion.div
+          key={node.id}
+          className="absolute text-sm font-mono text-primary/20 pointer-events-none"
+          initial={{ 
+            x: node.x, 
+            y: node.y, 
+            scale: 0.5,
+            opacity: 0.1
+          }}
+          animate={{ 
+            x: node.x + (Math.random() - 0.5) * 100,
+            y: node.y + (Math.random() - 0.5) * 100,
+            scale: node.scale,
+            opacity: 0.5,
+            rotateZ: Math.random() * 20 - 10
+          }}
+          transition={{ 
+            duration: 15 + Math.random() * 5,
+            ease: "easeInOut",
+            repeat: Infinity,
+            repeatType: "reverse"
+          }}
+        >
+          {node.formula}
+        </motion.div>
+      ))}
+    </motion.div>
+  );
+};
+
+// Interactive grid component
+const InteractiveGrid = ({ windowSize, mousePosition, smoothCursorX, smoothCursorY }) => {
+  if (typeof window === 'undefined' || windowSize.width === 0) return null;
+  
+  const [gridDots, setGridDots] = useState([]);
+  
+  // Update grid dots based on cursor position
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const dots = Array.from({ length: 13 * 13 }).map((_, i) => {
+      const col = i % 13;
+      const row = Math.floor(i / 13);
+      const x = (col / 12) * 100;
+      const y = (row / 12) * 100;
+      
+      // Calculate scale based on cursor position
+      const distanceFromCursorX = Math.abs(x - (mousePosition.x / windowSize.width * 100));
+      const distanceFromCursorY = Math.abs(y - (mousePosition.y / windowSize.height * 100));
+      
+      const scale = 1 + (1 - Math.min(distanceFromCursorX, 100) / 100) * 0.5;
+      const opacity = 0.5 + (1 - Math.min(distanceFromCursorY, 100) / 100) * 0.5;
+      
+      return { 
+        key: `dot-${i}`, 
+        x, 
+        y, 
+        scale, 
+        opacity 
+      };
+    });
+    
+    setGridDots(dots);
+  }, [mousePosition.x, mousePosition.y, windowSize.width, windowSize.height]);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden opacity-10 pointer-events-none">
+      <div className="absolute inset-0 grid grid-cols-12 grid-rows-12">
+        {gridDots.map((dot) => (
           <motion.div
-            key={element.id}
-            className="absolute text-primary pointer-events-none"
-            initial={{ x: element.x, y: element.y, opacity: element.opacity, scale: element.scale, rotate: element.rotation }}
-            animate={{ opacity: 0, y: element.y - 100, scale: element.scale * 0.5, rotate: element.rotation + 180 }}
-            transition={{ duration: 1.5, ease: "easeOut" }}
-          >
-            <element.Component size={24} />
-          </motion.div>
-        ))}
-        
-        {/* Cursor followers (small orbiting dots) */}
-        {cursorFollowers.current.map((follower, i) => (
-          <motion.div
-            key={`follower-${i}`}
-            className="absolute w-2 h-2 rounded-full bg-primary/30 pointer-events-none"
+            key={dot.key}
+            className="absolute w-1 h-1 bg-primary rounded-full"
             style={{
-              x: follower.x,
-              y: follower.y,
-              translateX: '-50%',
-              translateY: '-50%',
-              opacity: follower.opacity,
-              scale: follower.scale
+              left: `${dot.x}%`,
+              top: `${dot.y}%`,
+              scale: dot.scale,
+              opacity: dot.opacity
             }}
+            transition={{ duration: 0.2 }}
           />
         ))}
-        
-        {/* Large moving math formula nodes */}
-        {mathNodes.map((node) => (
-          <motion.div
-            key={node.id}
-            className="absolute text-sm font-mono text-primary/20 pointer-events-none"
-            initial={{ 
-              x: node.x, 
-              y: node.y, 
-              scale: 0.5,
-              opacity: 0.1
-            }}
-            animate={{ 
-              x: node.x + (Math.random() - 0.5) * 100,
-              y: node.y + (Math.random() - 0.5) * 100,
-              scale: node.scale,
-              opacity: 0.5,
-              rotateZ: Math.random() * 20 - 10
-            }}
-            transition={{ 
-              duration: 15 + Math.random() * 5,
-              ease: "easeInOut",
-              repeat: Infinity,
-              repeatType: "reverse"
-            }}
-          >
-            {node.formula}
-          </motion.div>
-        ))}
-      </motion.div>
+      </div>
+    </div>
+  );
+};
 
+// Math equation component
+const MathEquation = ({ windowSize, smoothCursorX, smoothCursorY, mathFormula }) => {
+  if (typeof window === 'undefined' || windowSize.width === 0) return null;
+  
+  const [rotationX, setRotationX] = useState(0);
+  const [rotationY, setRotationY] = useState(0);
+  const [opacity, setOpacity] = useState(0.2);
+  
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    // Calculate rotations based on cursor position
+    const newRotationY = 20 - (smoothCursorX.get() / windowSize.width) * 40;
+    const newRotationX = -20 + (smoothCursorY.get() / windowSize.height) * 40;
+    const newOpacity = 0.1 + (smoothCursorY.get() / windowSize.height) * 0.4;
+    
+    setRotationY(newRotationY);
+    setRotationX(newRotationX);
+    setOpacity(newOpacity);
+    
+    // Set up a subscription to smoothCursorX/Y changes
+    const unsubscribeX = smoothCursorX.onChange((value) => {
+      setRotationY(20 - (value / windowSize.width) * 40);
+    });
+    
+    const unsubscribeY = smoothCursorY.onChange((value) => {
+      setRotationX(-20 + (value / windowSize.height) * 40);
+      setOpacity(0.1 + (value / windowSize.height) * 0.4);
+    });
+    
+    return () => {
+      unsubscribeX();
+      unsubscribeY();
+    };
+  }, [smoothCursorX, smoothCursorY, windowSize.width, windowSize.height]);
+  
+  return (
+    <motion.div 
+      className="absolute text-xl md:text-3xl text-primary/20 font-mono pointer-events-none mix-blend-multiply z-0"
+      style={{
+        x: smoothCursorX,
+        y: smoothCursorY,
+        translateX: '-50%',
+        translateY: '-50%',
+        rotateY: rotationY,
+        rotateX: rotationX,
+      }}
+    >
+      <motion.span 
+        style={{ opacity }}
+        key={mathFormula}
+        initial={{ opacity: 0.1, scale: 0.8 }}
+        animate={{ opacity: 0.3, scale: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <span dangerouslySetInnerHTML={{ __html: mathFormula.replace(/\^(\w+)/g, '<sup>$1</sup>') }} />
+      </motion.span>
+    </motion.div>
+  );
+};
+
+// Client-side cursor wrapper for safer loading
+const ClientSideCursor = ({ children }) => {
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+    
+    return () => {
+      setIsMounted(false);
+    };
+  }, []);
+  
+  if (!isMounted) return null;
+  
+  return <>{children}</>;
+};
+
+export default function Home() {
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  
+  // For window-based calculations
+  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
+  const [isClient, setIsClient] = useState(false);
+
+  // Add an extra math-themed interaction
+  const [equation, setEquation] = useState('');
+  const [showSolution, setShowSolution] = useState(false);
+  const equationInputRef = useRef<HTMLInputElement>(null);
+
+  const heroRef = useRef(null);
+  const heroInView = useInView(heroRef, { once: true });
+  const featuresRef = useRef(null);
+  const featuresInView = useInView(featuresRef, { once: true, amount: 0.2 });
+
+  // For framer motion values in client components
+  const cursorX = useMotionValue(0);
+  const cursorY = useMotionValue(0);
+  const springConfig = { damping: 25, stiffness: 200 };
+  const smoothCursorX = useSpring(cursorX, springConfig);
+  const smoothCursorY = useSpring(cursorY, springConfig);
+
+  const handleSolveEquation = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (equation.trim()) {
+      setShowSolution(true);
+      // Simulate auto-focusing back to the input after showing the solution
+      setTimeout(() => {
+        if (equationInputRef.current) {
+          equationInputRef.current.focus();
+        }
+      }, 100);
+    }
+  };
+
+  // Equations and solutions for demo
+  const getEquationSolution = (eq: string) => {
+    // This is just a simple demo - would be replaced with actual math solver in a real app
+    const simpleEquations: Record<string, string> = {
+      'x^2-4x+4=0': 'x = 2 (double root)',
+      'x^2-9=0': 'x = ±3',
+      'x^2+2x+1=0': 'x = -1 (double root)',
+      '2x+3=7': 'x = 2',
+      'x^2-5x+6=0': 'x = 2 or x = 3',
+      '3x-6=0': 'x = 2',
+      'x^3-x=0': 'x = 0, x = 1, or x = -1',
+    };
+    
+    const normalizedEq = eq.replace(/\s+/g, '').toLowerCase();
+    
+    if (simpleEquations[normalizedEq]) {
+      return simpleEquations[normalizedEq];
+    }
+    
+    return "I'll solve this step by step in a full explanation";
+  };
+
+  // Effect for window size and mouse position
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    // Update window size
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+    };
+    
+    // Handle mouse movement
+    const handleMouseMove = (e: MouseEvent) => {
+      const { clientX, clientY } = e;
+      setMousePosition({ x: clientX, y: clientY });
+      cursorX.set(clientX);
+      cursorY.set(clientY);
+    };
+    
+    // Set initial size
+    handleResize();
+    setIsClient(true);
+    
+    // Add event listeners
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('mousemove', handleMouseMove);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
+
+  return (
+    <div className="flex flex-col min-h-screen overflow-hidden relative">
+      {/* Custom cursor effects - client-side only */}
+      {isClient && windowSize.width > 0 && (
+        <ClientSideCursor>
+          <CursorEffects windowSize={windowSize} mousePosition={mousePosition} />
+        </ClientSideCursor>
+      )}
+      
       <main className="flex-1">
         {/* Hero section */}
-        <section ref={heroRef} className="relative pt-28 pb-20 px-4 md:pt-36 md:pb-28 overflow-hidden">
+        <section ref={heroRef} className="relative py-20 px-4 md:py-28 overflow-hidden">
           <div 
             className="absolute inset-0 bg-gradient-to-br from-white via-orange-50 to-primary/5 z-0" 
             style={{ 
-              background: `radial-gradient(circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(249, 115, 22, 0.15) 0%, rgba(255, 255, 255, 0) 60%)` 
+              background: isClient ? `radial-gradient(circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(249, 115, 22, 0.15) 0%, rgba(255, 255, 255, 0) 60%)` : undefined
             }}
           />
           
           {/* Interactive connect-the-dots grid that responds to cursor */}
-          <div className="absolute inset-0 overflow-hidden opacity-10 pointer-events-none">
-            <div className="absolute inset-0 grid grid-cols-12 grid-rows-12">
-              {Array.from({ length: 13 * 13 }).map((_, i) => {
-                const col = i % 13;
-                const row = Math.floor(i / 13);
-                const x = (col / 12) * 100;
-                const y = (row / 12) * 100;
-                
-                return (
-                  <motion.div
-                    key={`dot-${i}`}
-                    className="absolute w-1 h-1 bg-primary rounded-full"
-                    style={{
-                      left: `${x}%`,
-                      top: `${y}%`,
-                      scale: useTransform(
-                        smoothCursorX,
-                        [0, window.innerWidth],
-                        [
-                          1 - Math.abs(x - (mousePosition.x / window.innerWidth * 100)) * 0.01,
-                          1 + Math.abs(x - (mousePosition.x / window.innerWidth * 100)) * 0.01
-                        ]
-                      ),
-                      opacity: useTransform(
-                        smoothCursorY,
-                        [0, window.innerHeight],
-                        [
-                          0.5 - Math.abs(y - (mousePosition.y / window.innerHeight * 100)) * 0.005,
-                          0.5 + Math.abs(y - (mousePosition.y / window.innerHeight * 100)) * 0.005
-                        ]
-                      )
-                    }}
-                  />
-                );
-              })}
-            </div>
-          </div>
+          {isClient && windowSize.width > 0 && (
+            <ClientSideCursor>
+              <InteractiveGrid 
+                windowSize={windowSize} 
+                mousePosition={mousePosition} 
+                smoothCursorX={smoothCursorX} 
+                smoothCursorY={smoothCursorY} 
+              />
+            </ClientSideCursor>
+          )}
           
           {/* Magic Math equation following cursor - enhanced */}
-          <motion.div 
-            className="absolute text-xl md:text-3xl text-primary/20 font-mono pointer-events-none mix-blend-multiply z-0"
-            style={{
-              x: smoothCursorX,
-              y: smoothCursorY,
-              translateX: '-50%',
-              translateY: '-50%',
-              rotateY: useTransform(smoothCursorX, [0, window.innerWidth], [20, -20]),
-              rotateX: useTransform(smoothCursorY, [0, window.innerHeight], [-20, 20]),
-            }}
-          >
-            <motion.span 
-              style={{ 
-                opacity: useTransform(
-                  smoothCursorY, 
-                  [0, window.innerHeight], 
-                  [0.1, 0.5]
-                ) 
-              }}
-              key={mathFormula}
-              initial={{ opacity: 0.1, scale: 0.8 }}
-              animate={{ opacity: 0.3, scale: 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              <span dangerouslySetInnerHTML={{ __html: mathFormula.replace(/\^(\w+)/g, '<sup>$1</sup>') }} />
-            </motion.span>
-          </motion.div>
+          {isClient && windowSize.width > 0 && (
+            <ClientSideCursor>
+              <MathEquation 
+                windowSize={windowSize} 
+                smoothCursorX={smoothCursorX} 
+                smoothCursorY={smoothCursorY} 
+                mathFormula={mathFormulas[0]} // Just use the first one
+              />
+            </ClientSideCursor>
+          )}
           
           {/* Existing floating blobs with enhanced behaviors */}
           <motion.div 
@@ -434,11 +581,6 @@ export default function Home() {
               duration: 15,
               repeat: Infinity,
               repeatType: "reverse"
-            }}
-            style={{
-              x: useTransform(smoothCursorX, [0, window.innerWidth], [-20, 20]),
-              scaleX: useTransform(smoothCursorX, [0, window.innerWidth/2, window.innerWidth], [0.9, 1.2, 0.9]),
-              scaleY: useTransform(smoothCursorY, [0, window.innerHeight/2, window.innerHeight], [0.9, 1.2, 0.9]),
             }}
           />
           
@@ -469,230 +611,143 @@ export default function Home() {
                   variants={fadeInUp}
                   transition={{ duration: 0.6 }}
                 >
-                  AI-Powered Math Education
+                AI-Powered Math Education
                 </motion.h1>
+                
                 <motion.p 
-                  className="mt-6 text-lg md:text-xl text-gray-700 max-w-2xl mx-auto"
+                  className="mt-6 text-lg md:text-xl leading-relaxed text-gray-600"
                   variants={fadeInUp}
                   transition={{ duration: 0.6, delay: 0.1 }}
                 >
-                  Transform mathematical problems into engaging video explanations with AI-powered animations and voiceovers.
+                  Experience intuitive learning with Baby Newton's interactive visual explanations, dynamic animations,
+                  and step-by-step solutions for any math problem.
                 </motion.p>
-                <motion.div 
-                  className="mt-10 flex flex-wrap gap-4 justify-center"
-                  variants={fadeInUp}
-                  transition={{ duration: 0.6, delay: 0.2 }}
-                >
-                  <Link 
-                    href="/dashboard" 
-                    className="btn-primary inline-flex items-center group relative overflow-hidden"
-                  >
-                    <span className="relative z-10 flex items-center">
-                      Get Started <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                    </span>
-                    <div className="absolute inset-0 translate-y-[100%] bg-white/20 group-hover:translate-y-[0%] transition-transform duration-300" />
-                  </Link>
-                  <Link 
-                    href="#how-it-works" 
-                    className="btn-secondary inline-flex items-center group"
-                  >
-                    <span className="flex items-center">
-                      Learn More
-                      <motion.div
-                        animate={{ x: [0, 5, 0] }}
-                        transition={{ 
-                          duration: 1.5, 
-                          repeat: Infinity,
-                          repeatType: "loop"
-                        }}
-                      >
-                        <ChevronRight className="ml-1 h-4 w-4" />
-                      </motion.div>
-                    </span>
-                  </Link>
-                </motion.div>
-              </motion.div>
-
-              <motion.div 
-                className="mt-16 bg-white/50 backdrop-blur-md p-6 rounded-xl border border-gray-200/50 shadow-lg max-w-xl mx-auto"
-                initial={{ opacity: 0, y: 40 }}
-                animate={heroInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-              >
-                <div className="flex items-center mb-4">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-3">
-                    <Calculator className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="text-left">
-                    <h3 className="font-semibold text-gray-800">Try it now</h3>
-                    <p className="text-sm text-gray-600">Enter a math problem to see the magic</p>
-                  </div>
-                </div>
-                
-                <form onSubmit={handleSolveEquation} className="space-y-4">
-                  <div className="flex gap-2">
-                    <input
-                      ref={equationInputRef}
-                      type="text"
-                      placeholder="e.g., x^2 - 4x + 4 = 0"
-                      className="input-field flex-1 shadow-inner"
-                      value={equation}
-                      onChange={(e) => setEquation(e.target.value)}
-                    />
-                    <Button 
-                      type="submit"
-                      className="bg-primary/90 hover:bg-primary transition-colors"
-                      disabled={!equation.trim()}
-                    >
-                      <Zap className="h-4 w-4 mr-2" /> Solve
-                    </Button>
-                  </div>
-                  
-                  {/* Animated solution display */}
-                  <AnimatePresence>
-                    {showSolution && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0, y: 10 }}
-                        animate={{ opacity: 1, height: 'auto', y: 0 }}
-                        exit={{ opacity: 0, height: 0, y: -10 }}
-                        transition={{ duration: 0.3 }}
-                        className="bg-white/70 rounded-lg border border-primary/10 p-4"
-                      >
-                        <div className="flex items-start">
-                          <div className="bg-primary/10 rounded-full p-1 mr-2">
-                            <Sparkles className="h-4 w-4 text-primary" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-700">Solution:</p>
-                            <p className="text-md font-mono">{getEquationSolution(equation)}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="mt-2 flex justify-end">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-xs text-primary hover:bg-primary/10"
-                            onClick={() => {
-                              setShowSolution(false);
-                              setEquation('');
-                            }}
-                          >
-                            <X className="h-3 w-3 mr-1" /> Clear
-                          </Button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </form>
               </motion.div>
             </div>
           </div>
         </section>
 
-        {/* How it works section */}
-        <section 
-          id="how-it-works" 
-          ref={featuresRef}
-          className="py-16 bg-gradient-to-b from-white to-gray-50"
-        >
-          <div className="container mx-auto px-4">
-            <motion.div 
-              className="text-center mb-12"
-              initial={{ opacity: 0, y: 20 }}
-              animate={featuresInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2 className="text-3xl font-bold gradient-text">How It Works</h2>
-              <p className="mt-4 text-gray-600 max-w-2xl mx-auto">
-                Our platform uses AI to make math learning visual, interactive, and enjoyable.
-              </p>
-            </motion.div>
+        {/* Math problem solver */}
+        <section className="relative py-16 px-4 z-10">
+          <div className="container mx-auto">
+            {/* Orange shadow positioned behind the solver */}
+            <div className="absolute inset-0 -z-0 pointer-events-none overflow-hidden">
+              <div 
+                className="absolute top-1/2 left-1/2 w-[90vw] md:w-[600px] h-[90vw] md:h-[600px] max-w-full max-h-full bg-primary/15 rounded-full filter blur-[100px] opacity-70"
+                style={{ 
+                  transform: isClient ? `translate(-50%, -50%) translate(${mousePosition.x/10}px, ${mousePosition.y/10}px)` : 'translate(-50%, -50%)' 
+                }}
+              />
+            </div>
             
-            <motion.div 
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
-              variants={staggerContainer}
-              initial="hidden"
-              animate={featuresInView ? "visible" : "hidden"}
-            >
-              {featureCards.map((card, index) => (
-                <motion.div 
-                  key={index}
-                  className="glass-card hover-lift group"
-                  variants={fadeInUp}
-                  transition={{ duration: 0.5, delay: card.delay }}
-                  whileHover={{ y: -5, boxShadow: "0 15px 30px rgba(0,0,0,0.1)" }}
-                >
-                  <div className={`rounded-full ${card.color} w-12 h-12 flex items-center justify-center mb-4 transition-all duration-300 group-hover:scale-110`}>
-                    <card.icon className={`h-6 w-6 ${card.textColor}`} />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2 group-hover:text-primary transition-colors">{card.title}</h3>
-                  <p className="text-gray-600">{card.description}</p>
-                </motion.div>
-              ))}
-            </motion.div>
+            <Card className="max-w-3xl mx-auto glass-card bg-white/90 backdrop-blur-md shadow-xl border-0 relative z-10">
+              <CardContent className="p-6 md:p-10">
+                <h2 className="text-2xl md:text-3xl font-bold text-center mb-6 text-gray-800">
+                  <span className="text-primary">Generate</span> video explanations
+                </h2>
+                
+                <form onSubmit={handleSolveEquation} className="space-y-4">
+                  <div className="flex items-center">
+                    <div className="relative flex-1">
+                      <Calculator className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                      <input
+                        ref={equationInputRef}
+                        type="text"
+                        value={equation}
+                        onChange={(e) => setEquation(e.target.value)}
+                        placeholder="Enter an equation (e.g., x^2-4x+4=0)"
+                        className="w-full pl-10 pr-4 py-3 h-12 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white/90 backdrop-blur-sm"
+                      />
+                </div>
+                    <Button 
+                      type="submit" 
+                      className="rounded-l-none flex items-center gap-2 h-12 text-white"
+                    >
+                      Video Explanation
+                      <Video className="h-4 w-4" />
+                    </Button>
+              </div>
+                </form>
+                
+                <AnimatePresence>
+                  {showSolution && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                      className="mt-6"
+                    >
+                      <Card className="bg-primary/5 border-0">
+                        <CardContent className="p-4 md:p-6">
+                          <div className="flex items-start gap-4">
+                            <div className="bg-primary/10 rounded-full p-2">
+                              <Sparkles className="h-5 w-5 text-primary" />
+                </div>
+                            <div>
+                              <h3 className="text-lg font-medium text-gray-800">Solution:</h3>
+                              <p className="mt-1 text-gray-600 font-mono">
+                                {getEquationSolution(equation)}
+                              </p>
+                              <p className="mt-4 text-sm text-gray-500">
+                                Want a detailed explanation? <Link href="/chat" className="text-primary hover:underline">View step-by-step video →</Link>
+                              </p>
+              </div>
+            </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </CardContent>
+            </Card>
           </div>
         </section>
         
-        {/* CTA Section */}
-        <section ref={ctaRef} className="py-20 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-50 to-white z-0" />
-          
-          <motion.div 
-            className="absolute -right-20 -top-20 w-96 h-96 bg-primary/10 rounded-full blur-3xl opacity-60"
-            animate={{ 
-              scale: [1, 1.1, 1],
-              opacity: [0.6, 0.3, 0.6],
-            }}
-            transition={{ duration: 8, repeat: Infinity }}
-          />
-          
-          <motion.div 
-            className="absolute -left-20 -bottom-20 w-96 h-96 bg-orange-200/20 rounded-full blur-3xl opacity-60"
-            animate={{ 
-              scale: [1, 1.1, 1],
-              opacity: [0.6, 0.3, 0.6],
-            }}
-            transition={{ duration: 8, repeat: Infinity, delay: 4 }}
-          />
-          
-          <div className="container mx-auto px-4 relative z-10">
-            <motion.div 
-              className="max-w-2xl mx-auto text-center glass-card py-10 px-6"
-              initial={{ opacity: 0, y: 40 }}
-              animate={ctaInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-              transition={{ duration: 0.7 }}
-              whileHover={{ y: -5, boxShadow: "0 20px 40px rgba(0,0,0,0.1)" }}
-            >
-              <div className="inline-block p-3 rounded-full bg-primary/10 mb-6">
-                <Sparkles className="h-6 w-6 text-primary" />
-              </div>
-              <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Math Learning?</h2>
-              <p className="text-lg mb-8 text-gray-700">Join thousands of students who are already learning math in a whole new way.</p>
-              <Link 
-                href="/auth/signup" 
-                className="btn-primary inline-flex items-center px-8 py-3 shadow-lg group"
+        {/* Features section */}
+        <section id="features" ref={featuresRef} className="relative py-16 px-4 z-10">
+          <div className="container mx-auto">
+            <div className="max-w-3xl mx-auto text-center mb-16">
+              <motion.h2 
+                className="text-3xl md:text-4xl font-bold"
+                initial={{ opacity: 0, y: 20 }}
+                animate={featuresInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                transition={{ duration: 0.6 }}
               >
-                <span className="flex items-center">
-                  <PlusCircle className="mr-2 h-5 w-5" />
-                  Start Your Free Trial
-                </span>
+                A <span className="text-primary">smarter way</span> to learn mathematics
+              </motion.h2>
+              <motion.p 
+                className="mt-4 text-lg text-gray-600"
+                initial={{ opacity: 0, y: 20 }}
+                animate={featuresInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+              >
+                Baby Newton combines powerful AI, beautiful visualizations, and intuitive explanations 
+                to make learning math enjoyable and effective.
+              </motion.p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {featureCards.map((feature, index) => (
                 <motion.div
-                  className="ml-2"
-                  animate={{ 
-                    x: [0, 5, 0],
-                    opacity: [0, 1, 0]
-                  }}
-                  transition={{ 
-                    duration: 1.5, 
-                    repeat: Infinity,
-                    repeatType: "loop"
-                  }}
+                  key={index}
+                  className="relative"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={featuresInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                  transition={{ duration: 0.6, delay: 0.1 + feature.delay }}
                 >
-                  <ArrowRight className="h-4 w-4" />
+                  <Card className="h-full hover:shadow-lg transition-shadow duration-300 border-0 shadow">
+                    <CardContent className="p-6">
+                      <div className={`w-12 h-12 rounded-full ${feature.color} flex items-center justify-center mb-4`}>
+                        <feature.icon className={`h-6 w-6 ${feature.textColor}`} />
+                      </div>
+                      <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
+                      <p className="text-gray-600">{feature.description}</p>
+                    </CardContent>
+                  </Card>
                 </motion.div>
-              </Link>
-            </motion.div>
+              ))}
+            </div>
           </div>
         </section>
       </main>
@@ -722,5 +777,5 @@ export default function Home() {
         </div>
       </footer>
     </div>
-  )
+  );
 } 
