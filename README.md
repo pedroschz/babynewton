@@ -1,16 +1,16 @@
-# BabyNewton 🚀
+# BabyNewton
 
 BabyNewton is an innovative educational platform that transforms mathematical problems into engaging video explanations using AI. Our platform combines OpenAI's API, Manim for mathematical animations, and text-to-speech technology to create comprehensive, accessible math tutorials.
 
 ## Features
 
-- 🤖 AI-powered problem analysis and solution generation
-- 🎥 Beautiful mathematical animations using Manim
-- 🔊 Natural text-to-speech explanations
-- 📝 Synchronized subtitles
-- 👤 User authentication and progress tracking
-- 💬 Interactive AI chatbot for additional help
-- 📱 Responsive, modern UI design
+- AI-powered problem analysis and solution generation
+- Beautiful mathematical animations using Manim
+- Natural text-to-speech explanations
+- Synchronized subtitles
+- User authentication and progress tracking
+- Interactive AI chatbot for additional help
+- Responsive, modern UI design
 
 ## Tech Stack
 
@@ -44,11 +44,11 @@ BabyNewton is an innovative educational platform that transforms mathematical pr
 Create a `.env.local` file with the following variables:
 
 ```env
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-DATABASE_URL=your_database_url
-NEXTAUTH_SECRET=your_nextauth_secret
-NEXTAUTH_URL=http://localhost:3000
-OPENAI_API_KEY=your_openai_api_key
+NEXT_PUBLIC_APP_URL
+DATABASE_URL
+NEXTAUTH_SECRET
+NEXTAUTH_URL
+OPENAI_API_KEY
 ```
 
 ## Contributing
